@@ -1,0 +1,90 @@
+{
+  "task": "swinmr_pi_G1D30"    // task name
+  , "model": "swinmr_pi"    // 'swinmr_pi' or 'swinmr_npi'
+  , "mask": "G1D30"   // G1Dxx (e.g. G1D30), G2Dxx (e.g. G2D10), S10, R10
+  , "gpu_ids": [0, 1, 2, 3]
+  , "dist": true   // distributed computing
+  , "n_channels": 1    // 1 for grayscale, 3 for color
+  , "path": {
+    "root": "mri_recon"
+    , "pretrained_netG": null      // path of pretrained model
+    , "pretrained_netE": null      // path of pretrained model
+  }
+
+  , "datasets": {
+    "train": {
+      "name": "train_dataset"
+      , "dataset_type": "cc"    // 'cc', 'brats17'
+      , "dataroot_H": "./trainsets/db_train"    // path of H training dataset
+      , "mask": "G1D30"   // G1Dxx (e.g. G1D30), G2Dxx (e.g. G2D10), S10, R10
+      , "H_size": 96    // patch number
+      , "sigma": 15
+      , "sigma_test": 15
+      , "is_noise": false    // add noise in k-space
+      , "noise_level": 0.0    // NL = S/(S+N)
+      , "noise_var": 0.1
+      , "is_mini_dataset": false   // for debug
+      , "mini_dataset_prec": 1    // CC 4700 total
+      , "dataloader_shuffle": true
+      , "dataloader_num_workers": 16
+      , "dataloader_batch_size": 8
+    }
+    , "test": {
+      "name": "test_dataset"
+      , "dataset_type": "cc"    // 'cc', 'brats17'
+      , "dataroot_H": "./trainsets/db_valid"    // path of H testing dataset
+      , "mask": "G1D30"   // G1Dxx (e.g. G1D30), G2Dxx (e.g. G2D10), S10, R10
+      , "sigma": 15
+      , "sigma_test": 15
+      , "is_noise": false    // add noise in k-space
+      , "noise_level": 0.0    // NL = S/(S+N)
+      , "noise_var": 0.1
+    }
+  }
+
+  , "netG": {
+    "net_type": "swinir" 
+    , "upscale": 1 
+    , "in_chans": 1 
+    , "img_size": 256
+    , "window_size": 8  
+    , "img_range": 1.0 
+    , "depths": [6, 6, 6, 6, 6, 6]
+    , "embed_dim": 180    // channel number
+    , "num_heads": [6, 6, 6, 6, 6, 6]
+    , "mlp_ratio": 2 
+    , "upsampler": null
+    , "resi_connection": "1conv"    // '1conv', '3conv'
+    , "init_type": "default"
+  }
+
+  , "train": {
+    "G_lossfn_type": "charbonnier"    // "l1" | "l2sum" | "l2" | "ssim" | "charbonnier" preferred
+    , "G_lossfn_weight": 1.0    // default 1.0
+    , "G_charbonnier_eps": 1e-9     // default 1e-9
+    , "alpha": 15    // default 15
+    , "beta": 0.1    // default 0.1
+    , "gamma": 0.0025    // default 0.0025
+    , "E_decay": 0.999    // Exponential Moving Average for netG: set 0 to disable; default setting 0.999
+
+    , "G_optimizer_type": "adam"    // fixed, adam is enough
+    , "G_optimizer_lr": 2e-4    // learning rate
+    , "G_optimizer_wd": 0    // weight decay, default 0
+    , "G_optimizer_clipgrad": null
+    , "G_optimizer_reuse": true
+
+    , "G_scheduler_type": "MultiStepLR"
+    , "G_scheduler_milestones": [800000, 1200000, 1400000, 1500000, 1600000]
+    , "G_scheduler_gamma": 0.5
+
+    , "G_regularizer_orthstep": null
+    , "G_regularizer_clipstep": null
+
+    , "G_param_strict": true
+    , "E_param_strict": true
+
+    , "checkpoint_test": 10000    // for testing
+    , "checkpoint_save": 10000    // for saving model
+    , "checkpoint_print": 200    // for print
+  }
+}
