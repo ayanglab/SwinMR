@@ -6,6 +6,7 @@ Swin Transformer for Fast MRI
 
 Please cite:
 
+```
 @article{huang2022swin,
       title={Swin Transformer for Fast MRI}, 
       author={Jiahao Huang and Yingying Fang and Yinzhe Wu and Huanjun Wu and Zhifan Gao and Yang Li and Javier Del Ser and Jun Xia and Guang Yang},
@@ -14,6 +15,7 @@ Please cite:
       archivePrefix={arXiv},
       primaryClass={eess.IV}
 }
+```
 
 
 ## Requirements
