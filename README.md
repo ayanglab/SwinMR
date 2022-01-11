@@ -17,6 +17,16 @@ Please cite:
 }
 ```
 
+![Overview_of_SwinMR](./tmp/FIG_Overview.png)
+
+
+## Highlight
+
+- A novel Swin transformer-based model for fast MRI reconstruction was proposed.
+- A multi-channel loss with sensitivity maps was proposed for reserving more details.
+- Comparison studies were performed to validate the robustness of our SwinMR.
+- A pre-trained segmentation network was used to validate the reconstruction quality.
+
 
 ## Requirements
 
@@ -39,6 +49,7 @@ timm==0.4.12
 torch==1.9.0
 
 torchvision==0.10.0
+
 
 ## Training and Testing
 Use different options (json files) to train different networks.
