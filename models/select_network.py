@@ -22,22 +22,35 @@ def define_G(opt):
     # ----------------------------------------
     if net_type == 'swinir':
         from models.network_swinir import SwinIR as net
-        netG = net(upscale=opt_net['upscale'],
+        netG = net(img_size=opt_net['img_size'],
                    in_chans=opt_net['in_chans'],
-                   img_size=opt_net['img_size'],
-                   window_size=opt_net['window_size'],
-                   img_range=opt_net['img_range'],
-                   depths=opt_net['depths'],
                    embed_dim=opt_net['embed_dim'],
+                   depths=opt_net['depths'],
                    num_heads=opt_net['num_heads'],
+                   window_size=opt_net['window_size'],
                    mlp_ratio=opt_net['mlp_ratio'],
+                   upscale=opt_net['upscale'],
+                   img_range=opt_net['img_range'],
                    upsampler=opt_net['upsampler'],
                    resi_connection=opt_net['resi_connection'])
 
-    # ----------------------------------------
-    # others
-    # ----------------------------------------
-    # TODO
+    elif net_type == 'sdaut':
+        from models.network_sdaut import SDAUT as net
+        netG = net(img_size=opt_net['img_size'],
+                   patch_size=opt_net['patch_size'],
+                   in_chans=opt_net['in_chans'],
+                   embed_dims=opt_net['embed_dims'],
+                   types=opt_net['type'],
+                   depths=opt_net['depths'],
+                   n_heads=opt_net['num_heads'],
+                   n_groups=opt_net['n_group'],
+                   window_size=opt_net['window_size'],
+                   mlp_ratio=opt_net['mlp_ratio'],
+                   img_range=opt_net['img_range'],
+                   use_pe=opt_net['use_pe'],
+                   dwc_pe=opt_net['dwc_pe'],
+                   no_off=opt_net['no_off'],
+                   fixed_pe=opt_net['fixed_pe'],)
 
     else:
         raise NotImplementedError('netG [{:s}] is not found.'.format(net_type))
@@ -107,6 +120,10 @@ def define_D(opt):
         netD = discriminator(input_nc=opt_net['in_nc'],
                              ndf=opt_net['base_nc'])
 
+    elif net_type == 'discriminator_dagan':
+        from models.network_discriminator import Discriminator_DAGAN as discriminator
+        netD = discriminator(input_nc=opt_net['in_nc'],
+                             ndf=opt_net['base_nc'])
     else:
         raise NotImplementedError('netD [{:s}] is not found.'.format(net_type))
 
@@ -120,6 +137,72 @@ def define_D(opt):
 
     return netD
 
+def define_D_g(opt):
+    opt_net = opt['netD_g']
+    net_type = opt_net['net_type']
+
+    # ----------------------------------------
+    # discriminator_vgg_96
+    # ----------------------------------------
+    if net_type == 'discriminator_vgg_96':
+        from models.network_discriminator import Discriminator_VGG_96 as discriminator
+        netD = discriminator(in_nc=opt_net['in_nc'],
+                             base_nc=opt_net['base_nc'],
+                             ac_type=opt_net['act_mode'])
+
+    # ----------------------------------------
+    # discriminator_vgg_128
+    # ----------------------------------------
+    elif net_type == 'discriminator_vgg_128':
+        from models.network_discriminator import Discriminator_VGG_128 as discriminator
+        netD = discriminator(in_nc=opt_net['in_nc'],
+                             base_nc=opt_net['base_nc'],
+                             ac_type=opt_net['act_mode'])
+
+    # ----------------------------------------
+    # discriminator_vgg_192
+    # ----------------------------------------
+    elif net_type == 'discriminator_vgg_192':
+        from models.network_discriminator import Discriminator_VGG_192 as discriminator
+        netD = discriminator(in_nc=opt_net['in_nc'],
+                             base_nc=opt_net['base_nc'],
+                             ac_type=opt_net['act_mode'])
+
+    # ----------------------------------------
+    # discriminator_vgg_128_SN
+    # ----------------------------------------
+    elif net_type == 'discriminator_vgg_128_SN':
+        from models.network_discriminator import Discriminator_VGG_128_SN as discriminator
+        netD = discriminator()
+
+    elif net_type == 'discriminator_patchgan':
+        from models.network_discriminator import Discriminator_PatchGAN as discriminator
+        netD = discriminator(input_nc=opt_net['in_nc'],
+                             ndf=opt_net['base_nc'],
+                             n_layers=opt_net['n_layers'],
+                             norm_type=opt_net['norm_type'])
+
+    elif net_type == 'discriminator_unet':
+        from models.network_discriminator import Discriminator_UNet as discriminator
+        netD = discriminator(input_nc=opt_net['in_nc'],
+                             ndf=opt_net['base_nc'])
+
+    elif net_type == 'discriminator_dagan':
+        from models.network_discriminator import Discriminator_DAGAN as discriminator
+        netD = discriminator(input_nc=opt_net['in_nc'],
+                             ndf=opt_net['base_nc'])
+    else:
+        raise NotImplementedError('netD [{:s}] is not found.'.format(net_type))
+
+    # ----------------------------------------
+    # initialize weights
+    # ----------------------------------------
+    init_weights(netD,
+                 init_type=opt_net['init_type'],
+                 init_bn_type=opt_net['init_bn_type'],
+                 gain=opt_net['init_gain'])
+
+    return netD
 
 # --------------------------------------------
 # VGGfeature, netF, F

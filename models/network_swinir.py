@@ -1,8 +1,3 @@
-# -----------------------------------------------------------------------------------
-# SwinIR: Image Restoration Using Swin Transformer, https://arxiv.org/abs/2108.10257
-# Originally Written by Ze Liu, Modified by Jingyun Liang.
-# -----------------------------------------------------------------------------------
-
 import math
 import torch
 import torch.nn as nn
@@ -10,7 +5,9 @@ import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
-
+'''
+Multilayer Perceptron
+'''
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
@@ -81,8 +78,8 @@ class WindowAttention(nn.Module):
         super().__init__()
         self.dim = dim
         self.window_size = window_size  # Wh, Ww
-        self.num_heads = num_heads
-        head_dim = dim // num_heads
+        self.num_heads = num_heads  # number of head 6
+        head_dim = dim // num_heads  # head_dim: 180//6=30
         self.scale = qk_scale or head_dim ** -0.5
 
         # define a parameter table of relative position bias
@@ -117,10 +114,10 @@ class WindowAttention(nn.Module):
             x: input features with shape of (num_windows*B, N, C)
             mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
         """
-        B_, N, C = x.shape
+        B_, N, C = x.shape  # B_: 576 number of Windows * Batch_size in a GPU  N: 64 patch number in a window  C: 180 embedding channel
         qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
-
+        # q,k,v (576,6,64,30) (number of Windows * Batch_size in a GPU, number of head, patch number in a window, head_dim)
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
 
@@ -159,6 +156,19 @@ class WindowAttention(nn.Module):
         # x = self.proj(x)
         flops += N * self.dim * self.dim
         return flops
+
+    def params(self):
+        # calculate params for 1 window with token length of N
+        params = 0
+        # qkv = self.qkv(x)
+        params += self.dim * 3 * self.dim
+        # attn = (q @ k.transpose(-2, -1))
+        params += 0
+        #  x = (attn @ v)
+        params += 0
+        # x = self.proj(x)
+        params += self.dim * self.dim
+        return params
 
 
 class SwinTransformerBlock(nn.Module):
@@ -237,46 +247,46 @@ class SwinTransformerBlock(nn.Module):
         return attn_mask
 
     def forward(self, x, x_size):
-        H, W = x_size
-        B, L, C = x.shape
-        # assert L == H * W, "input feature has wrong size"
+        H, W = x_size  # x (4,9216,180) (batch_in_each_GPU, H*W, embedding_channel) x_size (96,96)
+        B, L, C = x.shape  # B:4 C:180 L:9216
+        assert L == H * W, "input feature has wrong size"
 
         shortcut = x
-        x = self.norm1(x)
-        x = x.view(B, H, W, C)
+        x = self.norm1(x)  # x (4,9216,180) (batch_in_each_GPU, H*W, embedding_channel)
+        x = x.view(B, H, W, C)  # x (4,96,96,180) (batch_in_each_GPU, embedding_channel, H, W)
 
         # cyclic shift
         if self.shift_size > 0:
             shifted_x = torch.roll(x, shifts=(-self.shift_size, -self.shift_size), dims=(1, 2))
         else:
-            shifted_x = x
+            shifted_x = x  # shifted_x (4,96,96,180) (batch_in_each_GPU, embedding_channel, H, W)
 
         # partition windows
-        x_windows = window_partition(shifted_x, self.window_size)  # nW*B, window_size, window_size, C
-        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # nW*B, window_size*window_size, C
+        x_windows = window_partition(shifted_x, self.window_size)  # (576,8,8,180) (nW*B, window_size, window_size, C)  nW:number of Windows
+        x_windows = x_windows.view(-1, self.window_size * self.window_size, C)  # (576,64,180) (nW*B, window_size*window_size, C)  nW:number of Windows
 
         # W-MSA/SW-MSA (to be compatible for testing on images whose shapes are the multiple of window size
         if self.input_resolution == x_size:
             attn_windows = self.attn(x_windows, mask=self.attn_mask)  # nW*B, window_size*window_size, C
         else:
-            attn_windows = self.attn(x_windows, mask=self.calculate_mask(x_size).to(x.device))
+            attn_windows = self.attn(x_windows, mask=self.calculate_mask(x_size).to(x.device))  # (576,64,180) (nW*B, window_size*window_size, C)  nW:number of Windows
 
         # merge windows
-        attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
-        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+        attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)  # (576,8,8,180) (nW*B, window_size, window_size, C)  nW:number of Windows
+        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C shifted_x (4,96,96,180) (batch_in_each_GPU, embedding_channel, H, W)
 
         # reverse cyclic shift
         if self.shift_size > 0:
             x = torch.roll(shifted_x, shifts=(self.shift_size, self.shift_size), dims=(1, 2))
         else:
             x = shifted_x
-        x = x.view(B, H * W, C)
+        x = x.view(B, H * W, C)  # x (4,9216,180) (batch_in_each_GPU, H*W, embedding_channel) x_size (96,96)
 
         # FFN
         x = shortcut + self.drop_path(x)
         x = x + self.drop_path(self.mlp(self.norm2(x)))
 
-        return x
+        return x  # x (4,9216,180) (batch_in_each_GPU, H*W, embedding_channel) x_size (96,96)
 
     def extra_repr(self) -> str:
         return f"dim={self.dim}, input_resolution={self.input_resolution}, num_heads={self.num_heads}, " \
@@ -296,6 +306,17 @@ class SwinTransformerBlock(nn.Module):
         flops += self.dim * H * W
         return flops
 
+    def params(self):
+        params = 0
+        # norm1
+        params += self.dim * 2
+        # W-MSA/SW-MSA
+        params += self.attn.params()
+        # mlp
+        params += 2 * self.dim * self.dim * self.mlp_ratio
+        # norm2
+        params += self.dim * 2
+        return params
 
 class PatchMerging(nn.Module):
     r""" Patch Merging Layer.
@@ -345,6 +366,10 @@ class PatchMerging(nn.Module):
         flops += (H // 2) * (W // 2) * 4 * self.dim * 2 * self.dim
         return flops
 
+    def params(self):
+        params = 2 * self.dim
+        params += 4 * self.dim * 2 * self.dim
+        return params
 
 class BasicLayer(nn.Module):
     """ A basic Swin Transformer layer for one stage.
@@ -415,6 +440,13 @@ class BasicLayer(nn.Module):
             flops += self.downsample.flops()
         return flops
 
+    def params(self):
+        params = 0
+        for blk in self.blocks:
+            params += blk.params()
+        if self.downsample is not None:
+            params += self.downsample.params()
+        return params
 
 class RSTB(nn.Module):
     """Residual Swin Transformer Block (RSTB).
@@ -491,6 +523,15 @@ class RSTB(nn.Module):
 
         return flops
 
+    def params(self):
+        params = 0
+        params += self.residual_group.params()
+        params += self.dim * self.dim * 9
+        params += self.patch_embed.params()
+        params += self.patch_unembed.params()
+
+        return params
+
 
 class PatchEmbed(nn.Module):
     r""" Image to Patch Embedding
@@ -534,6 +575,11 @@ class PatchEmbed(nn.Module):
             flops += H * W * self.embed_dim
         return flops
 
+    def params(self):
+        params = 0
+        if self.norm is not None:
+            params += 2 * self.embed_dim
+        return params
 
 class PatchUnEmbed(nn.Module):
     r""" Image to Patch Unembedding
@@ -568,6 +614,9 @@ class PatchUnEmbed(nn.Module):
         flops = 0
         return flops
 
+    def params(self):
+        params = 0
+        return params
 
 class Upsample(nn.Sequential):
     """Upsample module.
@@ -614,6 +663,9 @@ class UpsampleOneStep(nn.Sequential):
         flops = H * W * self.num_feat * 3 * 9
         return flops
 
+    def params(self):
+        params = self.num_feat * 3 * 9
+        return params
 
 class SwinIR(nn.Module):
     r""" SwinIR
@@ -643,45 +695,45 @@ class SwinIR(nn.Module):
         resi_connection: The convolutional block before residual connection. '1conv'/'3conv'
     """
 
-    def __init__(self, img_size=64, patch_size=1, in_chans=3,
+    def __init__(self, img_size=64, patch_size=1, in_chans=1,
                  embed_dim=96, depths=[6, 6, 6, 6], num_heads=[6, 6, 6, 6],
-                 window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
+                 window_size=8, mlp_ratio=4., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
-                 use_checkpoint=False, upscale=2, img_range=1., upsampler='', resi_connection='1conv',
+                 use_checkpoint=False, upscale=1, img_range=1., upsampler='', resi_connection='1conv',
                  **kwargs):
         super(SwinIR, self).__init__()
-        num_in_ch = in_chans
-        num_out_ch = in_chans
+        num_in_ch = in_chans  # 1
+        num_out_ch = in_chans  # 1
         num_feat = 64
-        self.img_range = img_range
+        self.img_range = img_range  # 1.0
         if in_chans == 3:
             rgb_mean = (0.4488, 0.4371, 0.4040)
             self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
         else:
             self.mean = torch.zeros(1, 1, 1, 1)
-        self.upscale = upscale
-        self.upsampler = upsampler
-        self.window_size = window_size
+        self.upscale = upscale  # 1
+        self.upsampler = upsampler  # None
+        self.window_size = window_size  # 8
 
         #####################################################################################################
         ################################### 1, shallow feature extraction ###################################
-        self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)
+        self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)  # in 1 out 180
 
         #####################################################################################################
         ################################### 2, deep feature extraction ######################################
-        self.num_layers = len(depths)
-        self.embed_dim = embed_dim
-        self.ape = ape
-        self.patch_norm = patch_norm
-        self.num_features = embed_dim
-        self.mlp_ratio = mlp_ratio
+        self.num_layers = len(depths)  # [6,6,6,6,6,6]
+        self.embed_dim = embed_dim  # 180
+        self.ape = ape  # False
+        self.patch_norm = patch_norm  # True
+        self.num_features = embed_dim  # 180
+        self.mlp_ratio = mlp_ratio  # 2?
 
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
             img_size=img_size, patch_size=patch_size, in_chans=embed_dim, embed_dim=embed_dim,
             norm_layer=norm_layer if self.patch_norm else None)
-        num_patches = self.patch_embed.num_patches
+        num_patches = self.patch_embed.num_patches  # num_patcher 65536
         patches_resolution = self.patch_embed.patches_resolution
         self.patches_resolution = patches_resolution
 
@@ -788,8 +840,8 @@ class SwinIR(nn.Module):
         return x
 
     def forward_features(self, x):
-        x_size = (x.shape[2], x.shape[3])
-        x = self.patch_embed(x)
+        x_size = (x.shape[2], x.shape[3])  # x (4,180,96,96) (batch_size_in_each_GPU, embedding_channel180, H (random-crop 96 in traning and 256 in testing), W) x_size (96,96)
+        x = self.patch_embed(x)  # x (4,9216,180) (batch_size_in_each_GPU, H*W, embedding_channel180)
         if self.ape:
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
@@ -797,13 +849,13 @@ class SwinIR(nn.Module):
         for layer in self.layers:
             x = layer(x, x_size)
 
-        x = self.norm(x)  # B L C
-        x = self.patch_unembed(x, x_size)
+        x = self.norm(x)  # B L C  # x (4,9216,180) (batch_size_in_each_GPU, H*W, embedding_channel180)
+        x = self.patch_unembed(x, x_size)  # x (4,180,96,96) (batch_size_in_each_GPU, embedding_channel180, H (random-crop 96 in traning and 256 in testing), W) x_size (96,96)
 
         return x
 
     def forward(self, x):
-        H, W = x.shape[2:]
+        H, W = x.shape[2:]  # x (4,1,96,96) (batch_size_in_each_GPU, input_image_channel, H (random-crop 96 in traning and 256 in testing), W)
         x = self.check_image_size(x)
 
         self.mean = self.mean.type_as(x)
@@ -830,8 +882,8 @@ class SwinIR(nn.Module):
             x = self.conv_last(self.lrelu(self.conv_hr(x)))
         else:
             # for image denoising and JPEG compression artifact reduction
-            x_first = self.conv_first(x)
-            res = self.conv_after_body(self.forward_features(x_first)) + x_first
+            x_first = self.conv_first(x)  # x_first (4,180,96,96) (batch_size_in_each_GPU, embedding_channel180, H (random-crop 96 in traning and 256 in testing), W)
+            res = self.conv_after_body(self.forward_features(x_first)) + x_first  # res (4,180,96,96)
             x = x + self.conv_last(res)
 
         x = x / self.img_range + self.mean
@@ -841,26 +893,58 @@ class SwinIR(nn.Module):
     def flops(self):
         flops = 0
         H, W = self.patches_resolution
-        flops += H * W * 3 * self.embed_dim * 9
+        flops += H * W * 1 * self.embed_dim * 9
         flops += self.patch_embed.flops()
         for i, layer in enumerate(self.layers):
             flops += layer.flops()
-        flops += H * W * 3 * self.embed_dim * self.embed_dim
-        flops += self.upsample.flops()
+        flops += H * W * self.embed_dim * self.embed_dim * 9
+        flops += H * W * self.embed_dim * 1 * 9
         return flops
 
+    def params(self):
+        params = 0
+        params += 1 * self.embed_dim * 9
+        params += self.patch_embed.params()
+        for i, layer in enumerate(self.layers):
+            params += layer.params()
+        params += self.embed_dim * self.embed_dim * 9
+        params += self.embed_dim * 1 * 9
+        return params
 
 if __name__ == '__main__':
-    upscale = 4
-    window_size = 8
-    height = (1024 // upscale // window_size + 1) * window_size
-    width = (720 // upscale // window_size + 1) * window_size
-    model = SwinIR(upscale=2, img_size=(height, width),
-                   window_size=window_size, img_range=1., depths=[6, 6, 6, 6],
-                   embed_dim=60, num_heads=[6, 6, 6, 6], mlp_ratio=2, upsampler='pixelshuffledirect')
-    print(model)
-    print(height, width, model.flops() / 1e9)
+    from thop import profile
+    from thop import clever_format
+    import os
+    batch = 1
+    height = 256
+    width = 256
+    device = 'cuda'
+    torch.cuda.empty_cache()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-    x = torch.randn((1, 3, height, width))
-    x = model(x)
-    print(x.shape)
+    print('swinmr')
+    model = SwinIR(upscale=1,
+                   in_chans=1,
+                   img_size=[256, 256],
+                   window_size=8,
+                   img_range=1.0,
+                   depths=[6, 6, 6, 6, 6, 6],
+                   embed_dim=180,
+                   num_heads=[6, 6, 6, 6, 6, 6],
+                   mlp_ratio=2.0,
+                   upsampler='',
+                   resi_connection='1conv',).to(device)
+
+    # print(model)
+    print('FLOPs: {}G'.format(round((model.flops() * 1e-9),3)))
+    print('PARAMs: {}M'.format(round((model.params() * 1e-6), 3)))
+    x = torch.randn((batch, 1, height, width)).to(device)
+    print(f'Input shape: {x.shape}')
+    # x = model(x)
+    print(f'Output shape: {x.shape}')
+    print('-------------------------------')
+
+    # macs, params = profile(model, inputs=(x, ))
+    # macs, params = clever_format([macs, params], "%.3f")
+    # print(macs)
+    # print(params)

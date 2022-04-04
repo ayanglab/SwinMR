@@ -1,13 +1,5 @@
 
 
-'''
-# --------------------------------------------
-# select dataset
-# --------------------------------------------
-# Kai Zhang (github: https://github.com/cszn)
-# --------------------------------------------
-'''
-
 
 def define_Dataset(dataset_opt):
     dataset_type = dataset_opt['dataset_type'].lower()
@@ -18,11 +10,17 @@ def define_Dataset(dataset_opt):
     elif dataset_type in ['cc']:
         from data.dataset_CC import DatasetCC as D
 
+    elif dataset_type in ['ccpi']:
+        from data.dataset_CCpi import DatasetCCpi as D
+
+    elif dataset_type in ['ccaxi']:
+        from data.dataset_CCaxi import DatasetCCaxi as D
+
     elif dataset_type in ['fastmri']:
-        from data.dataset_FastMRI import DatasetCC as D
+        from data.dataset_FastMRI import DatasetFastMRI as D
 
     elif dataset_type in ['brats17']:
-        from data.dataset_BraTS17_npy import DatasetBraTS17 as D
+        from data.dataset_BraTS17 import DatasetBraTS17 as D
 
     else:
         raise NotImplementedError('Dataset [{:s}] is not found.'.format(dataset_type))

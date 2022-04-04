@@ -72,12 +72,12 @@ class DatasetCC(data.Dataset):
         # get H image
         # ------------------------------------
 
-        H_path = self.paths_H[floor(index/2)]
-        SM_path = self.paths_SM[floor(index/2)]
+        # H_path = self.paths_H[floor(index/2)]
+        H_path = self.paths_H[floor(index)]
 
-        img_H, Sensitivity_Map = load_images(H_path, SM_path, isSM=True)
+        img_H, _ = self.load_images(H_path, 0, isSM=False)
 
-        img_L = undersample_kspace(img_H, mask, is_noise, noise_level, noise_var)
+        img_L = self.undersample_kspace(img_H, mask, is_noise, noise_level, noise_var)
 
         # ------------------------------------
         # if train, get L/H patch pair
@@ -93,22 +93,17 @@ class DatasetCC(data.Dataset):
             rnd_w = random.randint(0, max(0, W - self.patch_size))
             patch_L = img_L[rnd_h:rnd_h + self.patch_size, rnd_w:rnd_w + self.patch_size, :]
             patch_H = img_H[rnd_h:rnd_h + self.patch_size, rnd_w:rnd_w + self.patch_size, :]
-            patch_SM = Sensitivity_Map[rnd_h:rnd_h + self.patch_size, rnd_w:rnd_w + self.patch_size, :]
+
             # --------------------------------
             # augmentation - flip and/or rotate
             # --------------------------------
 
             mode = random.randint(0, 7)
-            patch_L, patch_H, patch_SM= util.augment_img(patch_L, mode=mode), \
-                                       util.augment_img(patch_H, mode=mode), \
-                                       util.augment_img(patch_SM, mode=mode)
-
+            patch_L, patch_H = util.augment_img(patch_L, mode=mode), util.augment_img(patch_H, mode=mode)
             # --------------------------------
             # HWC to CHW, numpy(uint) to tensor
             # --------------------------------
-            img_L, img_H, Sensitivity_Map = util.uint2tensor3(patch_L), \
-                                            util.uint2tensor3(patch_H), \
-                                            util.uint2tensor3(patch_SM)
+            img_L, img_H  = util.uint2tensor3(patch_L), util.uint2tensor3(patch_H)
 
         else:
 
@@ -117,7 +112,49 @@ class DatasetCC(data.Dataset):
             # --------------------------------
             img_L, img_H = util.uint2tensor3(img_L), util.uint2tensor3(img_H)
 
-        return {'L': img_L, 'H': img_H, 'H_path': H_path, 'mask': mask, 'SM': Sensitivity_Map}
+        return {'L': img_L, 'H': img_H, 'H_path': H_path, 'mask': mask, 'SM': _}
 
     def __len__(self):
         return len(self.paths_H)
+
+    def load_images(self, H_path, SM_path, isSM=True):
+        # load GT
+        gt = np.load(H_path).astype(np.float32)
+
+        gt = np.reshape(gt, (gt.shape[0], gt.shape[1], 1))
+        # # 0 ~ 255
+        gt = (gt - gt.min()) / (gt.max() - gt.min()) * 255
+
+        # load SM
+        if isSM == True:
+            sm = np.load(SM_path).astype(np.float32)[:, :, :, 1]
+
+            # sm = np.reshape(sm[:, :, :, 1], (256, 256, 12))
+
+            # 0 ~ 1
+            sm = (sm - sm.min()) / (sm.max() - sm.min())
+
+            return gt, sm
+        else:
+            return gt, 0
+
+    def undersample_kspace(self, x, mask, is_noise, noise_level, noise_var):
+
+        fft = fft2(x[:, :, 0])
+        fft = fftshift(fft)
+        fft = fft * mask
+        if is_noise:
+            fft = fft + self.generate_gaussian_noise(fft, noise_level, noise_var)
+        fft = ifftshift(fft)
+        xx = ifft2(fft)
+        xx = np.abs(xx)
+
+        x = xx[:, :, np.newaxis]
+
+        return x
+
+    def generate_gaussian_noise(self, x, noise_level, noise_var):
+        spower = np.sum(x ** 2) / x.size
+        npower = noise_level / (1 - noise_level) * spower
+        noise = np.random.normal(0, noise_var ** 0.5, x.shape) * np.sqrt(npower)
+        return noise

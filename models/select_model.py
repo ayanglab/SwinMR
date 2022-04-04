@@ -13,13 +13,19 @@ def define_Model(opt):
         from models.model_swinmr_pi import MRI_PI as M
 
     elif model == 'swinmr_npi':
-        from models.model_swinmr_npi import MRI_NPI as M
+        from models.model_swinmr import MRI_NPI as M
 
-    elif model == 'swinmr_ori':
-        from models.model_swinmr_ori import MRI_Ori as M
+    elif model == 'swinmr_stgan':
+        from models.model_swinmr_stgan import MRI_STGAN as M
 
-    elif model == 'swinmr_gan':
-        from models.model_gan import MRI_GAN as M
+    elif model == 'swinmr_eesgan':
+        from models.model_swinmr_eesgan import MRI_EESGAN as M
+
+    elif model == 'swinmr_tesgan':
+        from models.model_swinmr_tesgan import MRI_TESGAN as M
+
+    elif model == 'sdaut_npi':
+        from models.model_sdaut import MRI_SDAUT as M
 
     else:
         raise NotImplementedError('Model [{:s}] is not defined.'.format(model))

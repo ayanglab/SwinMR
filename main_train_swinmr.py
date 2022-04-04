@@ -12,24 +12,16 @@ from utils import utils_logger
 from utils import utils_image as util
 from utils import utils_option as option
 from utils.utils_dist import get_dist_info, init_dist
+from utils import utils_early_stopping
 
 from data.select_dataset import define_Dataset
 from models.select_model import define_Model
 from tensorboardX import SummaryWriter
-
-'''
-# --------------------------------------------
-# training code for MSRResNet
-# --------------------------------------------
-# Kai Zhang (cskaizhang@gmail.com)
-# github: https://github.com/cszn/KAIR
-# --------------------------------------------
-# https://github.com/xinntao/BasicSR
-# --------------------------------------------
-'''
+import time
 
 
-def main(json_path='options/train_swinmr_brats17.json'):
+
+def main(json_path='options/SwinMR/train_datmr_CCnpi_G1D30_sample.json'):
     '''
     # ----------------------------------------
     # Step--1 (prepare opt)
@@ -63,8 +55,7 @@ def main(json_path='options/train_swinmr_brats17.json'):
     init_iter_E, init_path_E = option.find_last_checkpoint(opt['path']['models'], net_type='E')
     opt['path']['pretrained_netG'] = init_path_G
     opt['path']['pretrained_netE'] = init_path_E
-    init_iter_optimizerG, init_path_optimizerG = option.find_last_checkpoint(opt['path']['models'],
-                                                                             net_type='optimizerG')
+    init_iter_optimizerG, init_path_optimizerG = option.find_last_checkpoint(opt['path']['models'],  net_type='optimizerG')
     opt['path']['pretrained_optimizerG'] = init_path_optimizerG
     current_step = max(init_iter_G, init_iter_E, init_iter_optimizerG)
 
@@ -87,7 +78,7 @@ def main(json_path='options/train_swinmr_brats17.json'):
     # ----------------------------------------
     if opt['rank'] == 0:
         logger_name = 'train'
-        utils_logger.logger_info(logger_name, os.path.join(opt['path']['log'], logger_name + '.log'))
+        utils_logger.logger_info(logger_name, os.path.join(opt['path']['log'], logger_name+'.log'))
         logger = logging.getLogger(logger_name)
         logger.info(option.dict2str(opt))
 
@@ -126,9 +117,9 @@ def main(json_path='options/train_swinmr_brats17.json'):
                 train_sampler = DistributedSampler(train_set, shuffle=dataset_opt['dataloader_shuffle'], drop_last=True,
                                                    seed=seed)
                 train_loader = DataLoader(train_set,
-                                          batch_size=dataset_opt['dataloader_batch_size'] // opt['num_gpu'],
+                                          batch_size=dataset_opt['dataloader_batch_size']//opt['num_gpu'],
                                           shuffle=False,
-                                          num_workers=dataset_opt['dataloader_num_workers'] // opt['num_gpu'],
+                                          num_workers=dataset_opt['dataloader_num_workers']//opt['num_gpu'],
                                           drop_last=True,
                                           pin_memory=True,
                                           sampler=train_sampler)
@@ -155,23 +146,26 @@ def main(json_path='options/train_swinmr_brats17.json'):
     '''
 
     model = define_Model(opt)
+
     model.init_train()
     if opt['rank'] == 0:
         logger.info(model.info_network())
         logger.info(model.info_params())
 
+    early_stopping = utils_early_stopping.EarlyStopping(patience=opt['train']['early_stopping_num'])
     '''
     # ----------------------------------------
     # Step--4 (main training)
     # ----------------------------------------
     '''
 
-    for epoch in range(1000000):  # keep running
+    for epoch in range(100000000):  # keep running
 
         for i, train_data in enumerate(train_loader):
 
             current_step += 1
-
+            # if current_step == 1:
+            #     time1 = time.time()
             # -------------------------------
             # 1) update learning rate
             # -------------------------------
@@ -187,6 +181,9 @@ def main(json_path='options/train_swinmr_brats17.json'):
             # -------------------------------
             model.optimize_parameters(current_step)
 
+            # if current_step == 100:
+            #     time2 = time.time()
+            #     time_used_100_steps = time2 - time1
             # -------------------------------
             # 4) training information
             # -------------------------------
@@ -196,13 +193,13 @@ def main(json_path='options/train_swinmr_brats17.json'):
                                                                           model.current_learning_rate())
                 for k, v in logs.items():  # merge log information into message
                     message += '{:s}: {:.3e} '.format(k, v)
+                # message += 'Time Used: {:.8e} '.format(time_used_100_steps)
                 logger.info(message)
 
                 # record train loss
                 logger_tensorboard.add_scalar('Learning Rate', model.current_learning_rate(), global_step=current_step)
                 logger_tensorboard.add_scalar('TRAIN Generator LOSS/G_loss', logs['G_loss'], global_step=current_step)
-                # if 'g_adversarial' in logs.keys():
-                #     logger_tensorboard.add_scalar('TRAIN Generator LOSS/g_adversarial', logs['G_loss_adversarial'], global_step=current_step)
+
                 if 'G_loss_image' in logs.keys():
                     logger_tensorboard.add_scalar('TRAIN Generator LOSS/G_loss_image', logs['G_loss_image'],
                                                   global_step=current_step)
@@ -212,9 +209,6 @@ def main(json_path='options/train_swinmr_brats17.json'):
                 if 'G_loss_preceptual' in logs.keys():
                     logger_tensorboard.add_scalar('TRAIN Generator LOSS/G_loss_preceptual', logs['G_loss_preceptual'],
                                                   global_step=current_step)
-                # logger_tensorboard.add_scalar('TRAIN Discriminator LOSS/D_LOSS', d_loss.item(), global_step=current_step)
-                # logger_tensorboard.add_scalar('TRAIN Discriminator LOSS/d_loss_real', d_loss_real.item(), global_step=current_step)
-                # logger_tensorboard.add_scalar('TRAIN Discriminator LOSS/d_loss_fake', d_loss_fake.item(), global_step=current_step)
 
             # -------------------------------
             # 5) save model
@@ -228,8 +222,8 @@ def main(json_path='options/train_swinmr_brats17.json'):
             # -------------------------------
             if current_step % opt['train']['checkpoint_test'] == 0 and opt['rank'] == 0:
 
-                avg_psnr = 0
-                avg_ssim = 0
+                avg_psnr = 0.0
+                avg_ssim = 0.0
 
                 for idx, test_data in enumerate(test_loader):
                     image_name_ext = os.path.basename(test_data['H_path'][0])
@@ -247,34 +241,20 @@ def main(json_path='options/train_swinmr_brats17.json'):
                     E_img = util.tensor2uint(visuals['E'])
                     H_img = util.tensor2uint(visuals['H'])
 
-                    # SM_imgs = visuals['SM'].data.squeeze().float().clamp_(0, 1).cpu().numpy()
-                    #
-                    # mask_img = util.tensor2uint(visuals['mask'])
-
                     # -----------------------
                     # save estimated image E
                     # -----------------------
-                    save_img_path = os.path.join(img_dir, 'ZF_{:d}.png'.format(current_step))
-                    util.imsave(L_img, save_img_path)
-                    save_img_path = os.path.join(img_dir, 'Recon_{:d}.png'.format(current_step))
-                    util.imsave(E_img, save_img_path)
-                    save_img_path = os.path.join(img_dir, 'GT_{:d}.png'.format(current_step))
-                    util.imsave(H_img, save_img_path)
 
-                    # for ii in range(SM_imgs.shape[2]):
-                    #     save_img_path = os.path.join(img_dir, 'GT_{:d}_{}.png'.format(current_step, ii))
-                    #     SM_img = SM_imgs[:, :, ii]
-                    #
-                    #     H_SM_img = H_img * SM_img
-                    #     util.imsave(H_SM_img, save_img_path)
-                    #
-                    #     save_img_path = os.path.join(img_dir, 'SM_{:d}_{}.png'.format(current_step, ii))
-                    #     SM_img = np.uint8((SM_img * 255.0).round())
-                    #     util.imsave(SM_img, save_img_path)
-                    # save_img_path = os.path.join(img_dir, 'mask_{:d}.png'.format(current_step))
-                    # util.imsave(mask_img, save_img_path)
+                    if idx < 10:
+                        save_img_path = os.path.join(img_dir, 'ZF_{:5d}.png'.format(current_step))
+                        util.imsave(L_img, save_img_path)
+                        save_img_path = os.path.join(img_dir, 'Recon_{:5d}.png'.format(current_step))
+                        util.imsave(E_img, save_img_path)
+                        save_img_path = os.path.join(img_dir, 'GT_{:5d}.png'.format(current_step))
+                        util.imsave(H_img, save_img_path)
+
                     # -----------------------
-                    # calculate PSNR
+                    # calculate PSNR SSIM
                     # -----------------------
                     current_psnr = util.calculate_psnr(E_img, H_img, border=border)
                     current_ssim = util.calculate_ssim(E_img, H_img, border=border)
@@ -283,10 +263,10 @@ def main(json_path='options/train_swinmr_brats17.json'):
                     logger.info('{:->4d}--> {:>10s} | SSIM: {:<4.4f}'.format(idx, image_name_ext, current_ssim))
 
                     avg_psnr = current_psnr + avg_psnr
-                    avg_ssim = current_ssim + avg_psnr
+                    avg_ssim = current_ssim + avg_ssim
 
-                    # remove
-                    break
+                    if idx > 10:
+                        break
 
                 avg_psnr = avg_psnr / (idx + 1)
                 avg_ssim = avg_ssim / (idx + 1)
@@ -297,8 +277,25 @@ def main(json_path='options/train_swinmr_brats17.json'):
                 logger.info(
                     '<epoch:{:3d}, iter:{:8,d}, Average SSIM : {:<.4f}dB\n'.format(epoch, current_step, avg_ssim))
 
+                logger_tensorboard.add_scalar('VALIDATION PSNR', avg_psnr, global_step=current_step)
+                logger_tensorboard.add_scalar('VALIDATION SSIM', avg_ssim, global_step=current_step)
+
+                # early stopping
+                if opt['train']['is_early_stopping']:
+                    early_stopping(avg_psnr, model, epoch, current_step)
+                    if early_stopping.is_save:
+                        logger.info('Saving the model by early stopping')
+                        model.save(f'best_{current_step}')
+                    if early_stopping.early_stop:
+                        print("Early stopping!")
+                        break
+
     print("Training Stop")
 
 
 if __name__ == '__main__':
-    main()
+
+    # Train SwinMR CCpi
+    main('options/SwinMR/train_swinmr_CCpi_G1D30.json')
+    # Train SwinMR CCnpi
+    main('options/SwinMR/train_swinmr_CCnpi_G1D30.json')

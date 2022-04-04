@@ -203,7 +203,9 @@ class MRI_PI(ModelBase):
         if G_regularizer_clipstep > 0 and current_step % G_regularizer_clipstep == 0 and current_step % \
                 self.opt['train']['checkpoint_save'] != 0:
             self.netG.apply(regularizer_clip)
-
+        # ------------------------------------
+        # record log
+        # ------------------------------------
         self.log_dict['G_loss'] = G_loss.item()
         self.log_dict['G_loss_image'] = self.loss_image.item()
         self.log_dict['G_loss_frequency'] = self.loss_freq.item()
