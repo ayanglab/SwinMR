@@ -58,19 +58,19 @@ Use different options (json files) to train different networks.
 
 To train SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/SwinMR/train_swinmr_pi.json`
-
-To test SwinMR (PI) on CC:
-
-`python main_train_swinmr.py --opt ./options/SwinMR/train_swinmr_npi.json`
+`python main_train_swinmr.py --opt ./options/SwinMR/train_swinmr_CCpi_G1D30.json`
 
 To train SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/SwinMR/test/test_swinmr_pi.json`
+`python main_train_swinmr.py --opt ./options/SwinMR/train_swinmr_CCnpi_G1D30.json`
+
+To test SwinMR (PI) on CC:
+
+`python main_test_swinmr.py --opt ./options/SwinMR/test/test_swinmr_CCpi_G1D30.json`
 
 To test SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./optionsSwinMR//test/test_swinmr_npi.json`
+`python main_test_swinmr.py --opt ./options/SwinMR/test/test_swinmr_CCnpi_G1D30.json`
 
 
 
