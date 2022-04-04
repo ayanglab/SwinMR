@@ -58,29 +58,19 @@ Use different options (json files) to train different networks.
 
 To train SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/train_swinmr_pi.json`
+`python main_train_swinmr.py --opt ./options/SwinMR/train_swinmr_pi.json`
 
 To test SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/train_swinmr_npi.json`
+`python main_train_swinmr.py --opt ./options/SwinMR/train_swinmr_npi.json`
 
 To train SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/test/test_swinmr_pi.json`
+`python main_test_swinmr.py --opt ./options/SwinMR/test/test_swinmr_pi.json`
 
 To test SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/test/test_swinmr_npi.json`
-
-### Multi-modal Brain Tumour Segmentation Challenge 2017 (BraTS17)
-
-To train SwinMR (nPI) on BraTS17:
-
-`python main_train_swinmr.py --opt ./options/train_swinmr_brats17.json`
-
-To test SwinMR (nPI) on BraTS17:
-
-`python main_test_swinmr_BraTS17.py --opt ./options/test/test_swinmr_brats17.json`
+`python main_test_swinmr.py --opt ./optionsSwinMR//test/test_swinmr_npi.json`
 
 
 
