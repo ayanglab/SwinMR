@@ -21,7 +21,7 @@ import time
 
 
 
-def main(json_path='options/SwinMR/train_datmr_CCnpi_G1D30_sample.json'):
+def main(json_path=''):
     '''
     # ----------------------------------------
     # Step--1 (prepare opt)

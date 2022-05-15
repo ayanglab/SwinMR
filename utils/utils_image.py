@@ -10,6 +10,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import skimage.metrics
+import SimpleITK as sitk
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
@@ -289,14 +290,25 @@ def uint2tensor3(img):
         img = np.expand_dims(img, axis=2)
     return torch.from_numpy(np.ascontiguousarray(img)).permute(2, 0, 1).float().div(255.)
 
+# convert float0~1 to 3-dimensional torch tensor
+def float2tensor3(img):
+    if img.ndim == 2:
+        img = np.expand_dims(img, axis=2)
+    return torch.from_numpy(np.ascontiguousarray(img)).permute(2, 0, 1).float()
 
-# convert 2/3/4-dimensional torch tensor to uint
+# convert 2/3/4-dimensional torch tensor to uint0~255
 def tensor2uint(img):
     img = img.data.squeeze().float().clamp_(0, 1).cpu().numpy()
     if img.ndim == 3:
         img = np.transpose(img, (1, 2, 0))
     return np.uint8((img*255.0).round())
 
+# convert 2/3/4-dimensional torch tensor to float0~1
+def tensor2float(img):
+    img = img.data.squeeze().float().clamp_(0, 1).cpu().numpy()
+    if img.ndim == 3:
+        img = np.transpose(img, (1, 2, 0))
+    return img
 
 # --------------------------------------------
 # numpy(single) (HxWxC) <--->  tensor
@@ -649,6 +661,7 @@ def calculate_psnr(img1, img2, border=0):
         return float('inf')
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
+
 def calculate_psnr_single(img1, img2, border=0):
 
     # img1 =  np.clip(img1.squeeze(), -1, 1)
@@ -682,6 +695,15 @@ def calculate_ssim_single(img1, img2, border=0):
 
     return skimage.metrics.structural_similarity(img1, img2)
 
+
+def calculate_lpips_single(func, img1, img2):
+
+    if not img1.shape == img2.shape:
+        raise ValueError('Input images must have the same dimensions.')
+    img1 = (img1 * 2 - 1)
+    img2 = (img2 * 2 - 1)
+
+    return func(img1, img2)
 
 
 def ssim(img1, img2):
@@ -1029,6 +1051,79 @@ def imresize_np(img, scale, antialiasing=True):
         out_2.squeeze_()
 
     return out_2.numpy()
+
+def get_dice_2d(pred, gt):
+    EPSILON = 1e-7
+    labelPred = sitk.GetImageFromArray(pred + EPSILON, isVector=False)
+    labelTrue = sitk.GetImageFromArray(gt + EPSILON, isVector=False)
+
+    dicecomputer = sitk.LabelOverlapMeasuresImageFilter()
+    # dicecomputer.Execute(labelTrue, labelPred)
+    dicecomputer.Execute(labelTrue > 0.5, labelPred > 0.5)
+    dice = dicecomputer.GetDiceCoefficient()
+
+    return dice
+
+
+def get_hausdorff_2d(pred, gt):
+    EPSILON = 1e-7
+    labelPred = sitk.GetImageFromArray(pred + EPSILON, isVector=False)
+    labelTrue = sitk.GetImageFromArray(gt + EPSILON, isVector=False)
+
+    hausdorffcomputer = sitk.HausdorffDistanceImageFilter()
+    # hausdorffcomputer.Execute(labelTrue, labelPred)
+    hausdorffcomputer.Execute(labelTrue > 0.5, labelPred > 0.5)
+    avgHausdorff = hausdorffcomputer.GetAverageHausdorffDistance()
+    Hausdorff = hausdorffcomputer.GetHausdorffDistance()
+
+    return avgHausdorff, Hausdorff
+
+
+def get_iou_2d(pred, gt):
+    EPSILON = 1e-7
+    dims = (0, *range(1, len(pred.shape)))
+    intersection = pred * gt
+    union = pred + gt - intersection
+    iou = (np.sum(intersection) + EPSILON) / (np.sum(union) + EPSILON)
+
+    return iou
+
+
+def get_dice_3d(pred, gt):
+    EPSILON = 1e-7
+    labelPred = sitk.GetImageFromArray(pred + EPSILON, isVector=False)
+    labelTrue = sitk.GetImageFromArray(gt + EPSILON, isVector=False)
+
+    dicecomputer = sitk.LabelOverlapMeasuresImageFilter()
+    # dicecomputer.Execute(labelTrue, labelPred)
+    dicecomputer.Execute(labelTrue > 0.5, labelPred > 0.5)
+    dice = dicecomputer.GetDiceCoefficient()
+
+    return dice
+
+
+def get_hausdorff_3d(pred, gt):
+    EPSILON = 1e-7
+    labelPred = sitk.GetImageFromArray(pred + EPSILON, isVector=False)
+    labelTrue = sitk.GetImageFromArray(gt + EPSILON, isVector=False)
+
+    hausdorffcomputer = sitk.HausdorffDistanceImageFilter()
+    # hausdorffcomputer.Execute(labelTrue, labelPred)
+    hausdorffcomputer.Execute(labelTrue > 0.5, labelPred > 0.5)
+    avgHausdorff = hausdorffcomputer.GetAverageHausdorffDistance()
+    Hausdorff = hausdorffcomputer.GetHausdorffDistance()
+
+    return avgHausdorff, Hausdorff
+
+
+def get_iou_3d(pred, gt):
+    EPSILON = 1e-7
+    dims = (0, *range(1, len(pred.shape)))
+    intersection = pred * gt
+    union = pred + gt - intersection
+    iou = (np.sum(intersection) + EPSILON) / (np.sum(union) + EPSILON)
+
+    return iou
 
 
 if __name__ == '__main__':

@@ -16,8 +16,8 @@
   , "datasets": {
     "train": {
       "name": "train_dataset"
-      , "dataset_type": "cc"
-      , "dataroot_H": "/home/jh/data_temp/CC/db_train"    // path of H training dataset
+      , "dataset_type": "ccsagnpi"
+      , "dataroot_H": "[datapath]"    // path of H training dataset
       , "mask": "G1D30"   // G1Dxx (e.g. G1D30), G2Dxx (e.g. G2D10), S10, R10
       , "H_size": 96    // patch number
       , "sigma": 15
@@ -33,8 +33,8 @@
     }
     , "test": {
       "name": "test_dataset"
-      , "dataset_type": "cc"
-      , "dataroot_H": "/home/jh/data_temp/CC/db_valid"    // path of H testing dataset
+      , "dataset_type": "ccsagnpi"
+      , "dataroot_H": "[datapath]"    // path of H testing dataset
       , "mask": "G1D30"   // G1Dxx (e.g. G1D30), G2Dxx (e.g. G2D10), S10, R10
       , "sigma": 15
       , "sigma_test": 15
@@ -76,7 +76,7 @@
     , "G_optimizer_reuse": true
 
     , "G_scheduler_type": "MultiStepLR"
-    , "G_scheduler_milestones": [800000, 1200000, 1400000, 1500000, 1600000]
+    , "G_scheduler_milestones": [50000, 80000, 90000, 100000]
     , "G_scheduler_gamma": 0.5
 
     , "G_regularizer_orthstep": null

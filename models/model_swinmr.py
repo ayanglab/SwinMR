@@ -1,3 +1,15 @@
+'''
+# -----------------------------------------
+Model
+SwinMR m.1.1
+by Jiahao Huang (j.huang21@imperial.ac.uk)
+
+Thanks:
+https://github.com/JingyunLiang/SwinIR
+https://github.com/microsoft/Swin-Transformer
+# -----------------------------------------
+'''
+
 from collections import OrderedDict
 import torch
 import torch.nn as nn
@@ -14,10 +26,10 @@ from utils.utils_regularizers import regularizer_orth, regularizer_clip
 from utils.utils_swinmr import *
 
 
-class MRI_NPI(ModelBase):
+class MRI_SwinMR_NPI(ModelBase):
 
     def __init__(self, opt):
-        super(MRI_NPI, self).__init__(opt)
+        super(MRI_SwinMR_NPI, self).__init__(opt)
         # ------------------------------------
         # define network
         # ------------------------------------

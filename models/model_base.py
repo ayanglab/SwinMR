@@ -62,7 +62,7 @@ class ModelBase():
             scheduler.step(n)
 
     def current_learning_rate(self):
-        return self.schedulers[0].get_lr()[0]
+        return self.schedulers[0].get_last_lr()[0]
 
     def requires_grad(self, model, flag=True):
         for p in model.parameters():
@@ -166,7 +166,7 @@ class ModelBase():
             if param_key in state_dict_old.keys():
                 state_dict_old = state_dict_old[param_key]
             state_dict = network.state_dict()
-            for ((key_old, param_old),(key, param)) in zip(state_dict_old.items(), state_dict.items()):
+            for ((key_old, param_old), (key, param)) in zip(state_dict_old.items(), state_dict.items()):
                 state_dict[key] = param_old
             network.load_state_dict(state_dict, strict=True)
             del state_dict_old, state_dict

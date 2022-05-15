@@ -1,3 +1,11 @@
+'''
+# -----------------------------------------
+Data Loader
+CC-SAG-PI d.1.1
+by Jiahao Huang (j.huang21@imperial.ac.uk)
+# -----------------------------------------
+'''
+
 import random
 import torch.utils.data as data
 import utils.utils_image as util
@@ -6,7 +14,7 @@ from models.select_mask import define_Mask
 from math import floor
 
 
-class DatasetCCpi(data.Dataset):
+class DatasetCCsagnpi(data.Dataset):
     '''
     # -----------------------------------------
     # Get L/H for image-to-image mapping.
@@ -17,7 +25,7 @@ class DatasetCCpi(data.Dataset):
     '''
 
     def __init__(self, opt):
-        super(DatasetCCpi, self).__init__()
+        super(DatasetCCsagnpi, self).__init__()
         print('Get L/H for image-to-image mapping. Both "paths_L" and "paths_H" are needed.')
         self.opt = opt
         self.n_channels = self.opt['n_channels']
@@ -73,12 +81,9 @@ class DatasetCCpi(data.Dataset):
         # ------------------------------------
 
         # H_path = self.paths_H[floor(index/2)]
-        # SM_path = self.paths_SM[floor(index/2)]
-
         H_path = self.paths_H[floor(index)]
-        SM_path = self.paths_SM[floor(index)]
 
-        img_H, Sensitivity_Map = self.load_images(H_path, SM_path, isSM=True)
+        img_H, _ = self.load_images(H_path, 0, isSM=False)
 
         img_L = self.undersample_kspace(img_H, mask, is_noise, noise_level, noise_var)
 
@@ -96,22 +101,17 @@ class DatasetCCpi(data.Dataset):
             rnd_w = random.randint(0, max(0, W - self.patch_size))
             patch_L = img_L[rnd_h:rnd_h + self.patch_size, rnd_w:rnd_w + self.patch_size, :]
             patch_H = img_H[rnd_h:rnd_h + self.patch_size, rnd_w:rnd_w + self.patch_size, :]
-            patch_SM = Sensitivity_Map[rnd_h:rnd_h + self.patch_size, rnd_w:rnd_w + self.patch_size, :]
+
             # --------------------------------
             # augmentation - flip and/or rotate
             # --------------------------------
 
             mode = random.randint(0, 7)
-            patch_L, patch_H, patch_SM= util.augment_img(patch_L, mode=mode), \
-                                       util.augment_img(patch_H, mode=mode), \
-                                       util.augment_img(patch_SM, mode=mode)
-
+            patch_L, patch_H = util.augment_img(patch_L, mode=mode), util.augment_img(patch_H, mode=mode)
             # --------------------------------
             # HWC to CHW, numpy(uint) to tensor
             # --------------------------------
-            img_L, img_H, Sensitivity_Map = util.uint2tensor3(patch_L), \
-                                            util.uint2tensor3(patch_H), \
-                                            util.uint2tensor3(patch_SM)
+            img_L, img_H = util.uint2tensor3(patch_L), util.uint2tensor3(patch_H)
 
         else:
 
@@ -120,7 +120,7 @@ class DatasetCCpi(data.Dataset):
             # --------------------------------
             img_L, img_H = util.uint2tensor3(img_L), util.uint2tensor3(img_H)
 
-        return {'L': img_L, 'H': img_H, 'H_path': H_path, 'mask': mask, 'SM': Sensitivity_Map}
+        return {'L': img_L, 'H': img_H, 'H_path': H_path, 'mask': mask, 'SM': _}
 
     def __len__(self):
         return len(self.paths_H)

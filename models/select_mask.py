@@ -101,7 +101,16 @@ def define_Mask(opt):
     elif mask_name == 'S90':
         mask_shift = cv2.imread(os.path.join('mask', 'spiral', 'spiral_90.tif'), 0) / 255
         mask = scipy.fftpack.fftshift(mask_shift)
-
+    elif mask_name == 'AutoC10':
+        mask = 10
+    elif mask_name == 'AutoC20':
+        mask = 5
+    elif mask_name == 'AutoC30':
+        mask = 3.3
+    elif mask_name == 'AutoC33':
+        mask = 3
+    elif mask_name == 'AutoC50':
+        mask = 2
     else:
         raise NotImplementedError('Model [{:s}] is not defined.'.format(mask_name))
 

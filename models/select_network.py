@@ -21,7 +21,7 @@ def define_G(opt):
     # SwinIR
     # ----------------------------------------
     if net_type == 'swinir':
-        from models.network_swinir import SwinIR as net
+        from models.network_swinmr import SwinIR as net
         netG = net(img_size=opt_net['img_size'],
                    in_chans=opt_net['in_chans'],
                    embed_dim=opt_net['embed_dim'],
@@ -51,6 +51,104 @@ def define_G(opt):
                    dwc_pe=opt_net['dwc_pe'],
                    no_off=opt_net['no_off'],
                    fixed_pe=opt_net['fixed_pe'],)
+
+    elif net_type == 'sdautv2':
+        from models.network_sdaut_v2 import SDAUTv2 as net
+        netG = net(img_size=opt_net['img_size'],
+                   patch_size=opt_net['patch_size'],
+                   in_chans=opt_net['in_chans'],
+                   embed_dims=opt_net['embed_dims'],
+                   types=opt_net['type'],
+                   depths=opt_net['depths'],
+                   n_heads=opt_net['num_heads'],
+                   n_groups=opt_net['n_group'],
+                   window_size=opt_net['window_size'],
+                   mlp_ratio=opt_net['mlp_ratio'],
+                   img_range=opt_net['img_range'],
+                   use_pe=opt_net['use_pe'],
+                   dwc_pe=opt_net['dwc_pe'],
+                   no_off=opt_net['no_off'],
+                   fixed_pe=opt_net['fixed_pe'],)
+
+    elif net_type == 'sdautv2s':
+        from models.network_sdaut_v2s import SDAUTv2S as net
+        netG = net(img_size=opt_net['img_size'],
+                   patch_size=opt_net['patch_size'],
+                   in_chans=opt_net['in_chans'],
+                   out_chans=opt_net['out_chans'],
+                   embed_dims=opt_net['embed_dims'],
+                   types=opt_net['type'],
+                   depths=opt_net['depths'],
+                   n_heads=opt_net['num_heads'],
+                   n_groups=opt_net['n_group'],
+                   window_size=opt_net['window_size'],
+                   mlp_ratio=opt_net['mlp_ratio'],
+                   img_range=opt_net['img_range'],
+                   use_pe=opt_net['use_pe'],
+                   dwc_pe=opt_net['dwc_pe'],
+                   no_off=opt_net['no_off'],
+                   fixed_pe=opt_net['fixed_pe'],)
+
+    elif net_type == 'sdautv2c':
+        from models.network_sdaut_v2c import SDAUTv2C as net
+        netG = net(img_size=opt_net['img_size'],
+                   patch_size=opt_net['patch_size'],
+                   in_chans=opt_net['in_chans'],
+                   out_chans=opt_net['out_chans'],
+                   embed_dims=opt_net['embed_dims'],
+                   types=opt_net['type'],
+                   depths=opt_net['depths'],
+                   n_heads=opt_net['num_heads'],
+                   n_groups=opt_net['n_group'],
+                   window_size=opt_net['window_size'],
+                   mlp_ratio=opt_net['mlp_ratio'],
+                   img_range=opt_net['img_range'],
+                   use_pe=opt_net['use_pe'],
+                   dwc_pe=opt_net['dwc_pe'],
+                   no_off=opt_net['no_off'],
+                   fixed_pe=opt_net['fixed_pe'],)
+
+    elif net_type == 'swinunets':
+        from models.network_swinunets import SwinTransformerSys as net
+        netG = net(img_size=opt_net['img_size'],
+                   patch_size=opt_net['patch_size'],
+                   in_chans=opt_net['in_chans'],
+                   num_classes=opt_net['out_chans'],
+                   embed_dim=opt_net['embed_dim'],
+                   depths=opt_net['depths'],
+                   num_heads=opt_net['num_heads'],
+                   window_size=opt_net['window_size'],
+                   mlp_ratio=opt_net['mlp_ratio'],
+                   qkv_bias=True,
+                   qk_scale=None,
+                   drop_rate=0.,
+                   drop_path_rate=0.1,
+                   ape=False,
+                   patch_norm=True,
+                   use_checkpoint=False)
+
+    elif net_type == 'swinunetr':
+        from models.network_swinunetr import SwinTransformerSys as net
+        netG = net(img_size=opt_net['img_size'],
+                   patch_size=opt_net['patch_size'],
+                   in_chans=opt_net['in_chans'],
+                   num_classes=opt_net['out_chans'],
+                   embed_dim=opt_net['embed_dim'],
+                   depths=opt_net['depths'],
+                   num_heads=opt_net['num_heads'],
+                   window_size=opt_net['window_size'],
+                   mlp_ratio=opt_net['mlp_ratio'],
+                   qkv_bias=True,
+                   qk_scale=None,
+                   drop_rate=0.,
+                   drop_path_rate=0.1,
+                   ape=False,
+                   patch_norm=True,
+                   use_checkpoint=False)
+
+    elif net_type == 'unets':
+        from models.network_unets import UNet_Ori as net
+        netG = net(in_chans=opt_net['in_chans'], out_chans=opt_net['out_chans'],)
 
     else:
         raise NotImplementedError('netG [{:s}] is not found.'.format(net_type))
