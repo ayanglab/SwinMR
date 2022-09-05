@@ -22,8 +22,6 @@ def define_G(opt):
     # SwinIR (for SwinMR)
     # ----------------------------------------
     if net_type == 'swinir':
-        if not opt_net['out_chans']:
-            opt_net['out_chans'] = opt_net['in_chans'].copy()
         from models.network_swinmr import SwinIR as net
         netG = net(img_size=opt_net['img_size'],
                    in_chans=opt_net['in_chans'],
