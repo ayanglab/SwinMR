@@ -66,30 +66,19 @@ Use different options (json files) to train different networks.
 
 To train SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/train_swinmr_pi.json`
+`python main_train_swinmr.py --opt ./options/SwinMR/example/train_swinmr_CCpi_G1D30.json`
 
 To test SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/train_swinmr_npi.json`
+`python main_train_swinmr.py --opt ./options/SwinMR/example/test/test_swinmr_CCpi_G1D30.json`
 
 To train SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/test/test_swinmr_pi.json`
+`python main_test_swinmr.py --opt ./options/SwinMR/example/train_swinmr_CCnpi_G1D30.json`
 
 To test SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/test/test_swinmr_npi.json`
-
-### Multi-modal Brain Tumour Segmentation Challenge 2017 (BraTS17)
-
-To train SwinMR (nPI) on BraTS17:
-
-`python main_train_swinmr.py --opt ./options/train_swinmr_brats17.json`
-
-To test SwinMR (nPI) on BraTS17:
-
-`python main_test_swinmr_BraTS17.py --opt ./options/test/test_swinmr_brats17.json`
-
+`python main_test_swinmr.py --opt ./options/SwinMR/example/test/test_swinmr_CCnpi_G1D30.json`
 
 
 This repository is based on:
