@@ -1,4 +1,4 @@
-# SwinMR 
+# SwinMR
 
 by Jiahao Huang (j.huang21@imperial.ac.uk)
 
@@ -35,7 +35,6 @@ Please cite:
 - Comparison studies were performed to validate the robustness of our SwinMR.
 - A pre-trained segmentation network was used to validate the reconstruction quality.
 
-
 ## Requirements
 
 matplotlib==3.3.4
@@ -58,7 +57,6 @@ torch==1.9.0
 
 torchvision==0.10.0
 
-
 ## Training and Testing
 Use different options (json files) to train different networks.
 
@@ -66,26 +64,27 @@ Use different options (json files) to train different networks.
 
 To train SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/SwinMR/example/train_swinmr_CCpi_G1D30.json`
+`python main_train_swinmr.py --opt ./options/example/train_swinmr_CCpi_G1D30.json`
 
 To test SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/SwinMR/example/test/test_swinmr_CCpi_G1D30.json`
+`python main_train_swinmr.py --opt ./options/example/train_swinmr_CCnpi_G1D30.json`
 
 To train SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/SwinMR/example/train_swinmr_CCnpi_G1D30.json`
+`python main_test_swinmr_CC.py --opt ./options/example/test/test_swinmr_CCpi_G1D30.json`
 
 To test SwinMR (nPI) on CC:
 
-`python main_test_swinmr.py --opt ./options/SwinMR/example/test/test_swinmr_CCnpi_G1D30.json`
+`python main_test_swinmr_CC.py --opt ./options/example/test/test_swinmr_CCnpi_G1D30.json`
 
 
 This repository is based on:
 
-SwinIR: Image Restoration Using Swin Transformer ([code](https://github.com/JingyunLiang/SwinIR) and 
-[paper](https://arxiv.org/abs/2108.10257));
+SwinIR: Image Restoration Using Swin Transformer 
+([code](https://github.com/JingyunLiang/SwinIR) and [paper](https://openaccess.thecvf.com/content/ICCV2021W/AIM/html/Liang_SwinIR_Image_Restoration_Using_Swin_Transformer_ICCVW_2021_paper.html));
+
 
 Swin Transformer: Hierarchical Vision Transformer using Shifted Windows
-([code](https://github.com/microsoft/Swin-Transformer) and [paper](https://arxiv.org/abs/2103.14030)).
+([code](https://github.com/microsoft/Swin-Transformer) and [paper](https://openaccess.thecvf.com/content/ICCV2021/html/Liu_Swin_Transformer_Hierarchical_Vision_Transformer_Using_Shifted_Windows_ICCV_2021_paper.html)).
 
