@@ -27,7 +27,6 @@ from utils.utils_swinmr import *
 
 import matplotlib.pyplot as plt
 import einops
-import wandb
 from math import ceil
 import copy
 
@@ -48,8 +47,6 @@ class MRI_SwinMR_PI(ModelBase):
             print("Patch Embedding Frozen (Requires Grad)!")
         if self.opt_train['E_decay'] > 0:
             self.netE = define_G(opt).to(self.device).eval()
-        if opt['rank'] == 0:
-            wandb.watch(self.netG)
 
 
     """
