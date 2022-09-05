@@ -18,7 +18,7 @@
     "train": {
       "name": "train_dataset"
       , "dataset_type": "ccsagnpi"
-      , "dataroot_H": "/media/ssd/data_temp/CC/db_train"    // path of H training dataset
+      , "dataroot_H": "/trainsets/db_train"     // path of H training dataset
       , "mask": "G1D30"   // find keywords in ./models/select_mask.py
       , "H_size": 96    // patch number
       , "sigma": 15
@@ -35,7 +35,7 @@
     , "test": {
       "name": "test_dataset"
       , "dataset_type": "ccsagnpi"
-      , "dataroot_H": "/media/ssd/data_temp/CC/db_valid"    // path of H testing dataset
+      , "dataroot_H": "/testsets/db_test"    // path of H testing dataset
       , "mask": "G1D30"   // find keywords in ./models/select_mask.py
       , "sigma": 15
       , "sigma_test": 15
