@@ -1,3 +1,12 @@
+'''
+# -----------------------------------------
+Main Program for Testing
+SwinMR for MRI_Recon
+Dataset: CC
+by Jiahao Huang (j.huang21@imperial.ac.uk)
+# -----------------------------------------
+'''
+
 import argparse
 import cv2
 import csv
@@ -10,7 +19,6 @@ from utils import utils_option as option
 from torch.utils.data import DataLoader
 from models.network_swinmr import SwinIR as net
 from utils import utils_image as util
-
 from data.select_dataset import define_Dataset
 import time
 from math import ceil
@@ -91,20 +99,23 @@ def main(json_path):
         with torch.no_grad():
             # pad input image to be a multiple of window_size
             _, _, h_old, w_old = img_lq.size()
-            # h_pad = (h_old // window_size + 1) * window_size - h_old
-            # w_pad = (w_old // window_size + 1) * window_size - w_old
+            # old_size = img_lq.size()
+            #
+            # h_pad = ceil(h_old / (window_size * 8)) * (window_size * 8) - h_old
+            # w_pad = ceil(w_old / (window_size * 8)) * (window_size * 8) - w_old
             #
             # img_lq = torch.cat([img_lq, torch.flip(img_lq, [2])], 2)[:, :, :h_old + h_pad, :]
             # img_lq = torch.cat([img_lq, torch.flip(img_lq, [3])], 3)[:, :, :, :w_old + w_pad]
             #
             # img_gt = torch.cat([img_gt, torch.flip(img_gt, [2])], 2)[:, :, :h_old + h_pad, :]
             # img_gt = torch.cat([img_gt, torch.flip(img_gt, [3])], 3)[:, :, :, :w_old + w_pad]
-
+            #
+            # print('Padding: {} --> {}; GPU RAM USED: {:2f} G; GPU RAM MAX USED {:2f} G'
+            #       .format(old_size, img_lq.size(), torch.cuda.memory_allocated()*1e-9, torch.cuda.max_memory_allocated()*1e-9))
             time_start = time.time()
             img_gen = model(img_lq)
-            # print('FLOPs: {}G'.format(round((model.flops() * 1e-9),3)))
             time_end = time.time()
-            time_c = time_end - time_start  # 运行所花时间
+            time_c = time_end - time_start  # time used
             print('time cost', time_c, 's')
 
             img_lq = img_lq[..., :h_old * opt['scale'], :w_old * opt['scale']]
@@ -264,7 +275,6 @@ def setup(args):
 
 if __name__ == '__main__':
 
+    main()
 
-    main('options/SwinMR/test/test_swinmr_CCpi_G1D30.json')
-    main('options/SwinMR/test/test_swinmr_CCnpi_G1D30.json')
 
