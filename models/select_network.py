@@ -1,17 +1,33 @@
+'''
+# -----------------------------------------
+Define Training Network
+by Jiahao Huang (j.huang21@imperial.ac.uk)
+# -----------------------------------------
+'''
+
 import functools
 import torch
+import torchvision.models
 from torch.nn import init
 
 
-
+# --------------------------------------------
+# Recon Generator, netG, G
+# --------------------------------------------
 def define_G(opt):
     opt_net = opt['netG']
     net_type = opt_net['net_type']
 
+    # ----------------------------------------
+    # SwinIR (for SwinMR)
+    # ----------------------------------------
     if net_type == 'swinir':
+        if not opt_net['out_chans']:
+            opt_net['out_chans'] = opt_net['in_chans'].copy()
         from models.network_swinmr import SwinIR as net
         netG = net(img_size=opt_net['img_size'],
                    in_chans=opt_net['in_chans'],
+                   out_chans=opt_net['out_chans'],
                    embed_dim=opt_net['embed_dim'],
                    depths=opt_net['depths'],
                    num_heads=opt_net['num_heads'],
@@ -21,9 +37,6 @@ def define_G(opt):
                    img_range=opt_net['img_range'],
                    upsampler=opt_net['upsampler'],
                    resi_connection=opt_net['resi_connection'])
-
-    else:
-        raise NotImplementedError('netG [{:s}] is not found.'.format(net_type))
 
     # ----------------------------------------
     # initialize weights
@@ -35,6 +48,7 @@ def define_G(opt):
                      gain=opt_net['init_gain'])
 
     return netG
+
 
 
 # --------------------------------------------
@@ -56,13 +70,9 @@ def define_F(opt, use_bn=False):
     return netF
 
 
-"""
 # --------------------------------------------
 # weights initialization
 # --------------------------------------------
-"""
-
-
 def init_weights(net, init_type='xavier_uniform', init_bn_type='uniform', gain=1):
     """
     # Kai Zhang, https://github.com/cszn/KAIR

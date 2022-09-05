@@ -1,14 +1,16 @@
-
-"""
-# --------------------------------------------
-# define training model
-# --------------------------------------------
-"""
-
+'''
+# -----------------------------------------
+Define Training Model
+by Jiahao Huang (j.huang21@imperial.ac.uk)
+# -----------------------------------------
+'''
 
 def define_Model(opt):
     model = opt['model']
 
+    # --------------------------------------------------------
+    # SwinMR
+    # --------------------------------------------------------
     if model == 'swinmr_pi':
         from models.model_swinmr_pi import MRI_SwinMR_PI as M
 

@@ -329,6 +329,29 @@ class BinaryDiceLoss(nn.Module):
             raise Exception('Unexpected reduction {}'.format(self.reduction))
 
 
+def mask_to_onehot(net_output, gt):
+    """
+    net_output must be (b, c, x, y(, z)))
+    mask with shape (b, 1, x, y(, z)) OR shape (b, x, y(, z)))
+    """
+    shp_x = net_output.shape
+    shp_y = gt.shape
+    with torch.no_grad():
+        if len(shp_x) != len(shp_y):
+            gt = gt.view((shp_y[0], 1, *shp_y[1:]))
+
+        if all([i == j for i, j in zip(net_output.shape, gt.shape)]):
+            # if this is the case then gt is probably already a one hot encoding
+            y_onehot = gt
+        else:
+            gt = gt.long()
+            y_onehot = torch.zeros(shp_x)
+            if net_output.device.type == "cuda":
+                y_onehot = y_onehot.cuda(net_output.device.index)
+            y_onehot.scatter_(1, gt, 1)
+            # print(y_onehot)
+    return y_onehot
+
 class DiceLoss(nn.Module):
     """Dice loss, need one hot encode input
     Args:

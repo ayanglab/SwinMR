@@ -1,7 +1,7 @@
 '''
 # -----------------------------------------
 Network
-SwinMR m.1.1
+SwinMR m.1.3
 by Jiahao Huang (j.huang21@imperial.ac.uk)
 
 Thanks:
