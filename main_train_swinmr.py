@@ -32,7 +32,6 @@ from tensorboardX import SummaryWriter
 from collections import OrderedDict
 from skimage.transform import resize
 import lpips
-import wandb
 
 
 def main(json_path=''):
