@@ -68,11 +68,12 @@ To train SwinMR (PI) on CC:
 
 To test SwinMR (PI) on CC:
 
-`python main_train_swinmr.py --opt ./options/example/train_swinmr_CCnpi_G1D30.json`
+`python main_test_swinmr_CC.py --opt ./options/example/test/test_swinmr_CCpi_G1D30.json`
+
 
 To train SwinMR (nPI) on CC:
 
-`python main_test_swinmr_CC.py --opt ./options/example/test/test_swinmr_CCpi_G1D30.json`
+`python main_train_swinmr.py --opt ./options/example/train_swinmr_CCnpi_G1D30.json`
 
 To test SwinMR (nPI) on CC:
 
